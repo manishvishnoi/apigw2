@@ -1,19 +1,22 @@
 // Parameters
 param containerAppName string
 param location string
-param existingContainerAppEnvironmentName string
+param managedEnvironmentName string
+param acrName string
+param imageName string
+param acrPassword string
 param storageAccountName string
-param dockerImage string
+param storageAccountKey string
 param fileShareName string
-param storageAccountKey string // Passed from the pipeline as a parameter
+param targetPorts array = [8080, 8065, 8075] // Multiple target ports
 
 // Reference the existing Managed Environment
-resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-preview' existing = {
-  name: existingContainerAppEnvironmentName
+resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
+  name: managedEnvironmentName
 }
 
 // Create a storage link for Azure Files in the Managed Environment
-resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
+resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-05-01' = {
   parent: managedEnvironment
   name: '${storageAccountName}-link' // Ensure the name is unique
   properties: {
@@ -27,30 +30,58 @@ resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-prev
 }
 
 // Deploy the Container App with ingress configuration
-resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
+resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
   properties: {
     managedEnvironmentId: managedEnvironment.id
     configuration: {
+      registries: [
+        {
+          server: '${acrName}.azurecr.io'
+          username: acrName
+          passwordSecretRef: 'acr-password' // Secret name
+        }
+      ]
+      ingress: {
+        external: true // Set to true to expose it externally
+        targetPorts: targetPorts // Exposing multiple ports
+        transport: 'tcp' // TCP ingress traffic
+      }
       secrets: [
         {
-          name: 'storageaccountkey'
-          value: storageAccountKey
+          name: 'acr-password' // Secret name for ACR password
+          value: acrPassword
         }
       ]
     }
-
     template: {
       containers: [
         {
           name: containerAppName
-          image: dockerImage
-          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          image: '${acrName}.azurecr.io/${imageName}:latest' // Image path
+          resources: {
+            cpu: 2
+            memory: '4Gi' // Resources for the container
+          }
+          env: [ // Environment variables
+            {
+              name: 'ACCEPT_GENERAL_CONDITIONS'
+              value: 'yes'
+            },
+            {
+              name: 'MY_ENV_VARIABLE_1'
+              value: 'value1' // Replace with your actual values
+            },
+            {
+              name: 'MY_ENV_VARIABLE_2'
+              value: 'value2' // Replace with your actual values
+            }
+            // Add other environment variables as needed
           ]
           volumeMounts: [
             {
-              volumeName: '${storageAccountName}-volume' // Ensure this is correct
+              volumeName: '${storageAccountName}-volume'
               mountPath: '/opt/Axway/apigateway/conf/licenses'
             }
           ]
@@ -58,33 +89,15 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       ]
       volumes: [
         {
-          name: '${storageAccountName}-volume' // Ensure the volume name matches
+          name: '${storageAccountName}-volume'
           storageType: 'AzureFile'
-          storageName: '${storageAccountName}-link' // Correctly use the storage link
+          storageName: '${storageAccountName}-link' // Storage link
         }
       ]
     }
-
-    // Ingress block placed in the correct location
-    ingress: {
-      external: false // Limit ingress traffic to Container Apps Environment only
-      targetPort: 8080 // This is the target port for your application
-      transports: ['TCP'] // Define transport type
-      allowInsecure: false // Optional: Disable insecure connections
-      rules: [
-        {
-          port: 8075
-          protocol: 'TCP'
-        }
-        {
-          port: 8065
-          protocol: 'TCP'
-        }
-        {
-          port: 8080
-          protocol: 'TCP'
-        }
-      ]
+    scale: {
+      minReplicas: 1
+      maxReplicas: 3
     }
   }
 }
