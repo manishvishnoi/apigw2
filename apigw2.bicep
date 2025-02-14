@@ -53,7 +53,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
              
             }
           ]
-          mountOptions: 'shareName=' + fileShareName
+          mountOptions: 'shareName=${fileShareName}'
         }
       ]
     }
