@@ -1,35 +1,34 @@
-// Parameters
 param containerAppName string
 param location string
 param managedEnvironmentName string
 param acrName string
 param imageName string
-param acrPassword string
+param acrPassword string @secure()  // Marking as secure
 param storageAccountName string
-param storageAccountKey string
+param storageAccountKey string @secure()  // Marking as secure
 param fileShareName string
-param targetPorts array = [8080, 8065, 8075] // Multiple target ports
+param targetPorts array = [8080, 8065, 8075]  // Ports to expose
 
-// Reference the existing Managed Environment
+// Reference to the existing Managed Environment
 resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: managedEnvironmentName
 }
 
-// Create a storage link for Azure Files in the Managed Environment
+// Creating a storage link for Azure Files
 resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-05-01' = {
   parent: managedEnvironment
-  name: '${storageAccountName}-link' // Ensure the name is unique
+  name: '${storageAccountName}-link'
   properties: {
     azureFile: {
       accountName: storageAccountName
       accountKey: storageAccountKey
       shareName: fileShareName
-      accessMode: 'ReadWrite' // Or 'ReadOnly' based on your needs
+      accessMode: 'ReadWrite'  // Modify as needed
     }
   }
 }
 
-// Deploy the Container App with ingress configuration
+// Deploy the Container App
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
@@ -40,17 +39,17 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           server: '${acrName}.azurecr.io'
           username: acrName
-          passwordSecretRef: 'acr-password' // Secret name
+          passwordSecretRef: 'acr-password'
         }
       ]
       ingress: {
-        external: true // Set to true to expose it externally
-        targetPorts: targetPorts // Exposing multiple ports
-        transport: 'tcp' // TCP ingress traffic
+        external: true
+        targetPort: 8080  // Update with each port if needed
+        transport: 'tcp'
       }
       secrets: [
         {
-          name: 'acr-password' // Secret name for ACR password
+          name: 'acr-password'
           value: acrPassword
         }
       ]
@@ -59,10 +58,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       containers: [
         {
           name: containerAppName
-          image: '${acrName}.azurecr.io/${imageName}:latest' // Image path
+          image: '${acrName}.azurecr.io/${imageName}:latest'
           resources: {
             cpu: 2
-            memory: '4Gi' // Resources for the container
+            memory: '4Gi'
           }
           env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
@@ -78,7 +77,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: '${storageAccountName}-volume'
           storageType: 'AzureFile'
-          storageName: '${storageAccountName}-link' // Storage link
+          storageName: '${storageAccountName}-link'
         }
       ]
     }
