@@ -5,14 +5,9 @@ param existingContainerAppEnvironmentName string
 param storageAccountName string
 param dockerImage string
 param fileShareName string
-param storageAccountKey string // Key passed from the pipeline as a parameter
+param storageAccountKey string // Passed from the pipeline as a parameter
 
-// Reference existing storage account
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
-  name: storageAccountName
-}
-
-// Reference existing Managed Environment
+// Reference the existing Managed Environment
 resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-preview' existing = {
   name: existingContainerAppEnvironmentName
 }
@@ -20,7 +15,7 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-previe
 // Create a storage link for Azure Files in the Managed Environment
 resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
   parent: managedEnvironment
-  name: '${storageAccountName}-link' // Make sure the name matches the link reference
+  name: '${storageAccountName}-link' // Ensure the name is unique
   properties: {
     azureFile: {
       accountName: storageAccountName
@@ -56,7 +51,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
           ]
           volumeMounts: [
             {
-              volumeName: '${storageAccountName}-volume' // Volume name
+              volumeName: '${storageAccountName}-volume' // Ensure this is correct
               mountPath: '/opt/Axway/apigateway/conf/licenses'
             }
           ]
@@ -64,9 +59,9 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       ]
       volumes: [
         {
-          name: '${storageAccountName}-volume' // Ensure this matches the volume reference in container
+          name: '${storageAccountName}-volume' // Ensure the volume name matches
           storageType: 'AzureFile'
-          storageName: '${storageAccountName}-link' // Ensure the storage link name matches
+          storageName: '${storageAccountName}-link' // Correctly use the storage link
         }
       ]
     }
