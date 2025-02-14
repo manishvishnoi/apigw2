@@ -55,11 +55,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
         {
           name: containerAppName
           image: dockerImage
-          env: [
-            { name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },
-            { name: 'EMT_ANM_HOSTS', value: 'anm:8090' },
-            { name: 'CASS_HOST', value: 'casshost1' },
-            { name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          env: [ { name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
           volumeMounts: [
             {
