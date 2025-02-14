@@ -1,50 +1,77 @@
-trigger:
-  - main
+// Parameters
+param containerAppName string
+param location string
+param existingContainerAppEnvironmentName string
+param storageAccountName string
+param dockerImage string
+param fileShareName string
 
-pool:
-  name: Default  # Ensure this is your self-hosted agent pool
+// Reference existing storage account
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
+  name: storageAccountName
+}
 
-variables:
-  storageAccountName: 'stacc337'
-  fileShareName: 'myfileshare'
-  localFilePath: 'C:\Users\mavishnoi\Downloads\license.lic'
-  resourceGroup: 'RG-mavishnoi'
-  containerAppName: 'mycontainerapp'
-  existingContainerAppEnvironmentName: 'managedEnvironment-RGmavishnoi-91ac-21march'
-  location: 'northeurope'
-  dockerImage: 'manishvishnoi/gw22march:latest'
-  azureSubscription: 'axwaymanishdepops1'
+// Reference existing Managed Environment
+resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-preview' existing = {
+  name: existingContainerAppEnvironmentName
+}
 
-stages:
-  - stage: UploadFile
-    displayName: Upload File to Azure File Share
-    jobs:
-      - job: UploadFile
-        steps:
-          - task: AzureCLI@2
-            displayName: 'Upload File to Azure File Share'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              scriptType: pscore
-              scriptLocation: inlineScript
-              inlineScript: |
-                # Get the storage key dynamically
-                $storageKey = az storage account keys list --resource-group $(resourceGroup) --account-name $(storageAccountName) --query '[0].value' -o tsv
-                
-                # Upload the file to Azure File Share
-                #az storage file upload --account-name $(storageAccountName) --account-key $storageKey --share-name $(fileShareName) --source "$(localFilePath)"
+// Retrieve storage account keys
+var storageKeys = listKeys(storageAccount.id, '2023-01-01')
+var storageKey = storageKeys.keys[0].value
 
-  - stage: DeployContainerApp
-    displayName: Deploy Azure Resources (Container App)
-    jobs:
-      - job: DeployResources
-        displayName: Deploy Bicep Template
-        steps:
-          - task: AzureCLI@2
-            displayName: 'Deploy Bicep Template'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              scriptType: pscore
-              scriptLocation: inlineScript
-              inlineScript: |
-                az deployment group create --resource-group $(resourceGroup) --template-file ./apigw2.bicep --parameters storageAccountName=$(storageAccountName) containerAppName=$(containerAppName) dockerImage=$(dockerImage) existingContainerAppEnvironmentName=$(existingContainerAppEnvironmentName) location=$(location) fileShareName=myfileshare
+// Create a storage link for Azure Files in the Managed Environment
+resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
+  parent: managedEnvironment
+  name: '${storageAccountName}-link' // Make sure the name matches the link reference
+  properties: {
+    azureFile: {
+      accountName: storageAccountName
+      accountKey: storageKey
+      shareName: fileShareName
+      accessMode: 'ReadWrite' // Or 'ReadOnly' based on your needs
+    }
+  }
+}
+
+// Deploy the Container App
+resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
+  name: containerAppName
+  location: location
+  properties: {
+    managedEnvironmentId: managedEnvironment.id
+
+    configuration: {
+      secrets: [
+        {
+          name: 'storageaccountkey'
+          value: storageKey
+        }
+      ]
+    }
+
+    template: {
+      containers: [
+        {
+          name: containerAppName
+          image: dockerImage
+          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          ]
+          volumeMounts: [
+            {
+              volumeName: '${storageAccountName}-volume' // Volume name
+              mountPath: '/opt/Axway/apigateway/conf/licenses'
+            }
+          ]
+        }
+      ]
+      volumes: [
+        {
+          name: '${storageAccountName}-volume' // Ensure this matches the volume reference in container
+          storageType: 'AzureFile'
+          storageName: '${storageAccountName}-link' // Ensure the storage link name matches
+        }
+      ]
+    }
+  }
+}
