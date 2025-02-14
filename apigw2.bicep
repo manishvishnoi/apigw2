@@ -65,10 +65,12 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       ]
     }
 
+    // Ingress block placed in the correct location
     ingress: {
       external: false // Limit ingress traffic to Container Apps Environment only
       targetPort: 8080 // This is the target port for your application
       transports: ['TCP'] // Define transport type
+      allowInsecure: false // Optional: Disable insecure connections
       rules: [
         {
           port: 8075
