@@ -64,20 +64,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             cpu: 2
             memory: '4Gi' // Resources for the container
           }
-          env: [ // Environment variables
-            {
-              name: 'ACCEPT_GENERAL_CONDITIONS'
-              value: 'yes'
-            },
-            {
-              name: 'MY_ENV_VARIABLE_1'
-              value: 'value1' // Replace with your actual values
-            },
-            {
-              name: 'MY_ENV_VARIABLE_2'
-              value: 'value2' // Replace with your actual values
-            }
-            // Add other environment variables as needed
+          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
           volumeMounts: [
             {
