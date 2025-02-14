@@ -16,9 +16,12 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-previe
   name: existingContainerAppEnvironmentName
 }
 
-// Retrieve storage account keys
-var storageKeys = listKeys(storageAccount.id, '2023-01-01')
-var storageKey = storageKeys.keys[0].value
+// Retrieve storage account keys using a reference (instead of listKeys)
+resource storageAccountKeys 'Microsoft.Storage/storageAccounts/listKeys@2021-04-01' existing = {
+  name: storageAccountName
+}
+
+var storageKey = storageAccountKeys.keys[0].value
 
 // Create a storage link for Azure Files in the Managed Environment
 resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
