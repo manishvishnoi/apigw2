@@ -26,7 +26,7 @@ resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-prev
   }
 }
 
-// Deploy the Container App
+// Deploy the Container App with ingress configuration
 resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
   name: containerAppName
   location: location
@@ -47,7 +47,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
         {
           name: containerAppName
           image: dockerImage
-          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          env: [ { name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' }, { name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
           volumeMounts: [
             {
@@ -64,6 +64,24 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
           storageName: '${storageAccountName}-link' // Correctly use the storage link
         }
       ]
+
+      ingress: {
+        external: false // Limit ingress traffic to Container Apps Environment only
+        ports: [
+          {
+            port: 8075
+            protocol: 'TCP'
+          }
+          {
+            port: 8065
+            protocol: 'TCP'
+          }
+          {
+            port: 8080
+            protocol: 'TCP'
+          }
+        ]
+      }
     }
   }
 }
