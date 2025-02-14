@@ -3,11 +3,11 @@ param location string
 param managedEnvironmentName string
 param acrName string
 param imageName string
-param acrPassword string @secure()  // Marking as secure
+@secure param acrPassword string
 param storageAccountName string
-param storageAccountKey string @secure()  // Marking as secure
+@secure param storageAccountKey string
 param fileShareName string
-param targetPorts array = [8080, 8065, 8075]  // Ports to expose
+param targetPorts array = [8080, 8065, 8075] // The ports you want to expose
 
 // Reference to the existing Managed Environment
 resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
@@ -44,7 +44,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
       ]
       ingress: {
         external: true
-        targetPort: 8080  // Update with each port if needed
+        targetPort: 8080  // First port
         transport: 'tcp'
       }
       secrets: [
@@ -63,15 +63,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             cpu: 2
             memory: '4Gi'
           }
-          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
-          ]
-          volumeMounts: [
-            {
-              volumeName: '${storageAccountName}-volume'
-              mountPath: '/opt/Axway/apigateway/conf/licenses'
-            }
-          ]
-        }
+          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }       
       ]
       volumes: [
         {
