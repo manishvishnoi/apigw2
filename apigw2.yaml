@@ -5,7 +5,7 @@ pool:
   name: Default  # Ensure this is your self-hosted agent pool
 
 variables:
-  storageAccountName: 'stacc$(Build.BuildId)'
+  storageAccountName: 'stacc337'
   fileShareName: 'myfileshare'
   localFilePath: 'C:\Users\mavishnoi\Downloads\license.lic'
   resourceGroup: 'RG-mavishnoi'
