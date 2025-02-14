@@ -22,7 +22,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       secrets: [
         {
           name: 'storageaccountkey'
-          value: listKeys(storageAccount.id, '2023-01-01').keys[0].value
+          value: storageAccount.listKeys().keys[0].value
         }
       ]
     }
@@ -32,7 +32,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
         {
           name: containerAppName
           image: dockerImage
-          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          env: [ { name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
           volumeMounts: [ // Mount the file share volume
             {
@@ -47,15 +47,13 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
           name: 'fileshare-volume'
           storageType: 'AzureFile'
           storageName: storageAccountName
-          secrets: [ // Reference the storage account key secret
+          secrets: [
             {
-              name: 'azurefile-accountkey'
-              value: '$(storageaccountkey)'
+              secretRef: 'storageaccountkey'
+             
             }
           ]
-          mountOptions: {
-            shareName: fileShareName
-          }
+          mountOptions: 'shareName=' + fileShareName
         }
       ]
     }
