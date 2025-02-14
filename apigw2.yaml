@@ -1,0 +1,50 @@
+trigger:
+  - main
+
+pool:
+  name: Default  # Ensure this is your self-hosted agent pool
+
+variables:
+  storageAccountName: 'stacc$(Build.BuildId)'
+  fileShareName: 'myfileshare'
+  localFilePath: 'C:\Users\mavishnoi\Downloads\license.lic'
+  resourceGroup: 'RG-mavishnoi'
+  containerAppName: 'mycontainerapp'
+  existingContainerAppEnvironmentName: 'managedEnvironment-RGmavishnoi-91ac-21march'
+  location: 'northeurope'
+  dockerImage: 'manishvishnoi/gw22march:latest'
+  azureSubscription: 'axwaymanishdepops1'
+
+stages:
+  - stage: UploadFile
+    displayName: Upload File to Azure File Share
+    jobs:
+      - job: UploadFile
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Upload File to Azure File Share'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Get the storage key dynamically
+                $storageKey = az storage account keys list --resource-group $(resourceGroup) --account-name $(storageAccountName) --query '[0].value' -o tsv
+                
+                # Upload the file to Azure File Share
+                #az storage file upload --account-name $(storageAccountName) --account-key $storageKey --share-name $(fileShareName) --source "$(localFilePath)"
+
+  - stage: DeployContainerApp
+    displayName: Deploy Azure Resources (Container App)
+    jobs:
+      - job: DeployResources
+        displayName: Deploy Bicep Template
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Deploy Bicep Template'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az deployment group create --resource-group $(resourceGroup) --template-file ./apigw.bicep --parameters storageAccountName=stacc337 containerAppName=$(containerAppName) dockerImage=$(dockerImage) existingContainerAppEnvironmentName=$(existingContainerAppEnvironmentName) location=$(location) fileShareName=myfileshare
