@@ -23,13 +23,13 @@ var storageKey = storageKeys.keys[0].value
 // Create a storage link for Azure Files in the Managed Environment
 resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
   parent: managedEnvironment
-  name: 'fileshare-storage' // This must match the volume reference
+  name: '${storageAccountName}-link' // Make sure the name matches the link reference
   properties: {
     azureFile: {
       accountName: storageAccountName
-      accountKey: storageKey  // Ensure account key is passed
+      accountKey: storageKey
       shareName: fileShareName
-      accessMode: 'ReadWrite' // Use 'ReadOnly' if needed
+      accessMode: 'ReadWrite' // Or 'ReadOnly' based on your needs
     }
   }
 }
@@ -55,11 +55,11 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
         {
           name: containerAppName
           image: dockerImage
-          env: [ { name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
           volumeMounts: [
             {
-              volumeName: 'fileshare-volume'
+              volumeName: '${storageAccountName}-volume' // Volume name
               mountPath: '/opt/Axway/apigateway/conf/licenses'
             }
           ]
@@ -67,9 +67,9 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       ]
       volumes: [
         {
-          name: 'fileshare-volume'
+          name: '${storageAccountName}-volume' // Ensure this matches the volume reference in container
           storageType: 'AzureFile'
-          storageName: 'fileshare-storage' // Must match the storage link name
+          storageName: '${storageAccountName}-link' // Ensure the storage link name matches
         }
       ]
     }
