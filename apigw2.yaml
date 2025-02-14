@@ -47,4 +47,4 @@ stages:
               scriptType: pscore
               scriptLocation: inlineScript
               inlineScript: |
-                az deployment group create --resource-group $(resourceGroup) --template-file ./apigw.bicep --parameters storageAccountName=stacc337 containerAppName=$(containerAppName) dockerImage=$(dockerImage) existingContainerAppEnvironmentName=$(existingContainerAppEnvironmentName) location=$(location) fileShareName=myfileshare
+                az deployment group create --resource-group $(resourceGroup) --template-file ./apigw2.bicep --parameters storageAccountName=stacc337 containerAppName=$(containerAppName) dockerImage=$(dockerImage) existingContainerAppEnvironmentName=$(existingContainerAppEnvironmentName) location=$(location) fileShareName=myfileshare
