@@ -47,7 +47,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
           name: 'fileshare-volume'
           storageType: 'AzureFile'
           storageName: storageAccountName
-          mountOptions: 'shareName=${fileShareName}'
+
         }
       ]
     }
