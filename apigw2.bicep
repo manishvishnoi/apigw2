@@ -32,7 +32,6 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
   location: location
   properties: {
     managedEnvironmentId: managedEnvironment.id
-
     configuration: {
       secrets: [
         {
@@ -65,23 +64,24 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
         }
       ]
     }
-  }
 
-  ingress: {
-    external: false // Limit ingress traffic to Container Apps Environment only
-    ports: [
-      {
-        port: 8075
-        protocol: 'TCP'
-      }
-      {
-        port: 8065
-        protocol: 'TCP'
-      }
-      {
-        port: 8080
-        protocol: 'TCP'
-      }
-    ]
+    ingress: {
+      external: false // Limit ingress traffic to Container Apps Environment only
+      targetPort: 8080 // This is the target port for your application
+      ports: [
+        {
+          port: 8075
+          protocol: 'TCP'
+        }
+        {
+          port: 8065
+          protocol: 'TCP'
+        }
+        {
+          port: 8080
+          protocol: 'TCP'
+        }
+      ]
+    }
   }
 }
