@@ -38,12 +38,21 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
   properties: {
     managedEnvironmentId: managedEnvironment.id
 
-    // Configure TCP Ingress
-    ingress: {
-      external: true // Allow external traffic
-      targetPort: 8080 // Default target port
-      transport: 'tcp' // Set the ingress type to TCP
-      exposedPorts: [
+
+    configuration: {
+      secrets: [
+        {
+          name: 'storageaccountkey'
+          value: storageAccountKey
+        }
+      ]
+	  
+	      // Configure TCP Ingress
+      ingress: {
+       external: true // Allow external traffic
+       targetPort: 8080 // Default target port
+       transport: 'tcp' // Set the ingress type to TCP
+       exposedPorts: [
         {
           port: 8080 // Expose port 8080
           external: true // Allow external access
@@ -57,21 +66,13 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
           external: true // Allow external access
         }
       ]
-      traffic: [
+       traffic: [
         {
           weight: 100 // All traffic goes to this revision
           latestRevision: true
         }
       ]
-    }
-
-    configuration: {
-      secrets: [
-        {
-          name: 'storageaccountkey'
-          value: storageAccountKey
-        }
-      ]
+     }
     }
 
     template: {
