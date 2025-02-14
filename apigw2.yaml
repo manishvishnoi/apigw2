@@ -37,9 +37,9 @@ stages:
   - stage: DeployContainerApp
     displayName: Deploy Azure Resources (Container App)
     jobs:
-     - job: DeployResources
-       displayName: Deploy Bicep Template
-       steps:
+    - job: DeployResources
+      displayName: Deploy Bicep Template
+      steps:
         - task: AzureCLI@2
           displayName: 'Fetch Storage Account Key'
           inputs:
