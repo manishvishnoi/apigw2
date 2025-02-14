@@ -5,6 +5,7 @@ param existingContainerAppEnvironmentName string
 param storageAccountName string
 param dockerImage string
 param fileShareName string
+param storageAccountKey string // Key passed from the pipeline as a parameter
 
 // Reference existing storage account
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
@@ -16,13 +17,6 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-previe
   name: existingContainerAppEnvironmentName
 }
 
-// Retrieve storage account keys using a reference (instead of listKeys)
-resource storageAccountKeys 'Microsoft.Storage/storageAccounts/listKeys@2021-04-01' existing = {
-  name: storageAccountName
-}
-
-var storageKey = storageAccountKeys.keys[0].value
-
 // Create a storage link for Azure Files in the Managed Environment
 resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
   parent: managedEnvironment
@@ -30,7 +24,7 @@ resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-prev
   properties: {
     azureFile: {
       accountName: storageAccountName
-      accountKey: storageKey
+      accountKey: storageAccountKey
       shareName: fileShareName
       accessMode: 'ReadWrite' // Or 'ReadOnly' based on your needs
     }
@@ -48,7 +42,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       secrets: [
         {
           name: 'storageaccountkey'
-          value: storageKey
+          value: storageAccountKey
         }
       ]
     }
