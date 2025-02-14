@@ -16,15 +16,20 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-previe
   name: existingContainerAppEnvironmentName
 }
 
+// Retrieve storage account keys
+var storageKeys = listKeys(storageAccount.id, '2023-01-01')
+var storageKey = storageKeys.keys[0].value
+
 // Create a storage link for Azure Files in the Managed Environment
 resource storageLink 'Microsoft.App/managedEnvironments/storages@2023-04-01-preview' = {
   parent: managedEnvironment
-  name: 'fileshare-storage' 
+  name: 'fileshare-storage' // This must match the volume reference
   properties: {
     azureFile: {
       accountName: storageAccountName
+      accountKey: storageKey  // Ensure account key is passed
       shareName: fileShareName
-      accessMode: 'ReadWrite'
+      accessMode: 'ReadWrite' // Use 'ReadOnly' if needed
     }
   }
 }
@@ -40,7 +45,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
       secrets: [
         {
           name: 'storageaccountkey'
-          value: storageAccount.listKeys().keys[0].value
+          value: storageKey
         }
       ]
     }
@@ -50,7 +55,11 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
         {
           name: containerAppName
           image: dockerImage
-          env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+          env: [
+            { name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },
+            { name: 'EMT_ANM_HOSTS', value: 'anm:8090' },
+            { name: 'CASS_HOST', value: 'casshost1' },
+            { name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
           ]
           volumeMounts: [
             {
