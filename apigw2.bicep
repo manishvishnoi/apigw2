@@ -11,6 +11,7 @@ param storageAccountKey string // Key passed from the pipeline as a parameter
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   name: storageAccountName
 }
+
 // Reference existing Managed Environment
 resource managedEnvironment 'Microsoft.App/managedEnvironments@2023-04-01-preview' existing = {
   name: existingContainerAppEnvironmentName
@@ -37,6 +38,33 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
   properties: {
     managedEnvironmentId: managedEnvironment.id
 
+    // Configure TCP Ingress
+    ingress: {
+      external: true // Allow external traffic
+      targetPort: 8080 // Default target port (can be overridden by the transport settings)
+      transport: 'tcp' // Set the ingress type to TCP
+      traffic: [
+        {
+          weight: 100 // All traffic goes to this revision
+          latestRevision: true
+        }
+      ]
+      exposedPorts: [
+        {
+          port: 8080 // Expose port 8080
+          external: true // Allow external access
+        }
+        {
+          port: 8065 // Expose port 8065
+          external: true // Allow external access
+        }
+        {
+          port: 8075 // Expose port 8075
+          external: true // Allow external access
+        }
+      ]
+    }
+
     configuration: {
       secrets: [
         {
@@ -52,6 +80,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-04-01-preview' = {
           name: containerAppName
           image: dockerImage
           env: [{ name: 'ACCEPT_GENERAL_CONDITIONS', value: 'yes' },{ name: 'EMT_ANM_HOSTS', value: 'anm:8090' },{ name: 'CASS_HOST', value: 'casshost1' },{ name: 'EMT_TRACE_LEVEL', value: 'DEBUG' }
+           
           ]
           volumeMounts: [
             {
